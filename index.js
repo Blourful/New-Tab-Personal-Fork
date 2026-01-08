@@ -81,11 +81,12 @@ const linkProviders = [
 
 const id = (id) => document.getElementById(id)
 
-window.addEventListener('visibilitychange', () => {
-    const bg = id('bg')
-    if (document.visibilityState === 'hidden' && bg?.tagName === 'VIDEO')
-        localStorage.setItem('bg:time', bg.currentTime)
-})
+// Background is static image, no need to save video progress
+// window.addEventListener('visibilitychange', () => {
+//     const bg = id('bg')
+//     if (document.visibilityState === 'hidden' && bg?.tagName === 'VIDEO')
+//         localStorage.setItem('bg:time', bg.currentTime)
+// })
 
 const detectSearchMode = (currentMode, search) => {
     if (currentMode != null) {
@@ -139,12 +140,12 @@ document.addEventListener(
             }
         })
 
-        // Continue video from last time
-        const timestamp = localStorage.getItem('bg:time')
-        if (timestamp) {
-            const bg = id('bg')
-            if (bg?.tagName === 'VIDEO') bg.currentTime = timestamp
-        }
+        // Continue video from last time (not needed for static image background)
+        // const timestamp = localStorage.getItem('bg:time')
+        // if (timestamp) {
+        //     const bg = id('bg')
+        //     if (bg?.tagName === 'VIDEO') bg.currentTime = timestamp
+        // }
 
         // Clock
         const startClock = () => {
@@ -167,9 +168,9 @@ document.addEventListener(
             }
         }
 
-        // 每分钟更新一次，保证和系统同步
+        // Update clock every minute to keep in sync with system
         setInterval(startClock, 60000)
-        // 初始化
+        // Initialize
         startClock()
 
         // Clear search focus on page load/refresh
@@ -264,60 +265,8 @@ document.addEventListener(
             })
         }
 
-        let abortController = new AbortController()
-
-        const fetchSuggestion = () => {
-            abortController.abort()
-            abortController = new AbortController()
-
-            // Remove Japanese character joiner
-            let value = searchBox.value.replace(/\\\b/g, '')
-
-            if (!Number.isNaN(+value)) {
-                const index = +value
-                const pin = id('pin').children[index - 1]
-
-                if (pin) {
-                    let label = pin.href.split('://')[1]
-                    if (label.endsWith('/')) label = label.slice(0, -1)
-
-                    return updateSuggestion([{ label, href: pin.href }])
-                }
-            }
-
-            if (!value) return updateSuggestion([])
-
-            let prefix = ''
-            if (
-                value.startsWith('gh ') ||
-                value.startsWith('yt ') ||
-                value.startsWith('cl ')
-            ) {
-                prefix = value.slice(0, 2) + ' '
-                value = value.slice(3)
-            } else {
-                if (value.startsWith('gpt ') || value.startsWith('ask ')) {
-                    prefix = value.slice(0, 3) + ' '
-                    value = value.slice(4)
-                }
-            }
-
-            fetch(`https://search.saltyaom.com/hint/${value}`, {
-                signal: abortController.signal
-            })
-                .then((res) => res.json())
-                .catch()
-                .then(([_, ...suggestions] = []) => {
-                    if (!suggestions && !value) updateSuggestion([])
-
-                    updateSuggestion(
-                        suggestions.map((suggestion) => ({
-                            label: suggestion,
-                            href: composeLink(prefix + suggestion)
-                        }))
-                    )
-                })
-        }
+        // Search hint disabled for privacy.
+        const fetchSuggestion = () => {}
 
         searchBox.addEventListener('input', () => {
             const newMode = detectSearchMode(mode, searchBox.value)
@@ -356,8 +305,7 @@ document.addEventListener(
                 })
         })
         // Privacy: Disable weather fetch on load (sends location data)
-        //
-        displayWeather(true)
+        // displayWeather(true)
 
         // const bg = id('bg')
         // window.addEventListener('focus', () => {
@@ -373,143 +321,5 @@ document.addEventListener(
     }
 )
 
-let isFetching = false
-
-const getWeatherData = async (initial = false) => {
-    const lastSaved = localStorage.getItem('forecast-until')
-    if (
-        lastSaved &&
-        localStorage.getItem('forecast-data') &&
-        Date.now() < new Date(lastSaved).getTime()
-    )
-        return JSON.parse(localStorage.getItem('forecast-data'))
-
-    if (initial) throw new Error('No cached data')
-
-    let resolve, reject
-    const geolocationPromise = new Promise((_resolve, _reject) => {
-        resolve = _resolve
-        reject = _reject
-    })
-
-    navigator.geolocation.getCurrentPosition(
-        ({ coords }) => resolve(coords),
-        (error) => {
-            console.warn(error)
-
-            const href = location.href
-            const query = new URL(href).searchParams
-            const latlon = query.get('latlon')
-            if (latlon) {
-                const [latitude, longitude] = latlon.split(',').map(Number)
-
-                if (Number.isNaN(latitude) || Number.isNaN(longitude))
-                    return resolve(new Error('Invalid location'))
-
-                return resolve({ latitude, longitude })
-            }
-
-            const latLon = prompt('Latitude,Longtitude')
-            if (!latLon) return resolve(new Error('No location'))
-
-            const [latitude, longitude] = latLon.split(',').map(Number)
-
-            if (Number.isNaN(latitude) || Number.isNaN(longitude))
-                return resolve(new Error('Invalid location'))
-
-            resolve({ latitude, longitude })
-        },
-        {
-            enableHighAccuracy: true,
-            maximumAge: 0
-        }
-    )
-
-    const geolocation = await geolocationPromise
-    if (!geolocation || geolocation instanceof Error) return
-
-    const { latitude, longitude } = geolocation
-
-    if (isFetching) return
-    isFetching = true
-
-    const data = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,rain,uv_index,cloud_cover,precipitation_probability&timezone=auto&forecast_days=14`
-    ).then((response) => response.json())
-
-    isFetching = false
-
-    localStorage.setItem('forecast-until', data.hourly.time.at(-1))
-
-    localStorage.setItem('forecast-data', JSON.stringify(data))
-
-    return data
-}
-
-const icon = (name) => id(`icon-${name}`)
-
-const displayWeather = async (initial = false) => {
-    const {
-        latitude,
-        longitude,
-        elevation,
-        hourly: {
-            time: times,
-            temperature_2m: temperatures,
-            rain: rains,
-            uv_index: uvIndices,
-            cloud_cover: cloudCovers,
-            precipitation_probability: predictions
-        }
-    } = await getWeatherData(initial)
-
-    const startAt = new Date(times[0]).getTime()
-    const secondAt = new Date(times[1]).getTime()
-    const interval = secondAt - startAt
-
-    const hour = new Date().getHours()
-    const currentTime = new Date().getTime()
-    const index = Math.floor((currentTime - startAt) / interval)
-
-    const temperature = temperatures[index]
-    const prediction = predictions[index]
-    const uvIndex = uvIndices[index]
-    const cloudCover = cloudCovers[index]
-    const isNight = hour < 6 || hour > 18
-
-    let iconName = ''
-
-    if (prediction > 70) iconName = 'rain'
-    else if (prediction > 40) iconName = 'drizzle'
-    else if (cloudCover > 50) iconName = 'cloud'
-    else if (uvIndex >= 6) iconName = 'sun'
-    else if (isNight) iconName = 'moon'
-    else iconName = 'sun'
-
-    const icon = id('weather-icon')
-    while (icon.firstChild) icon.removeChild(icon.firstChild)
-
-    icon.appendChild(id(`icon-${iconName}`).content.cloneNode(true))
-
-    id('temperature').textContent = ~~temperature
-    id('rain').textContent = ~~prediction
-    id('uv-index').textContent = ~~uvIndex
-}
-
-let clearWeatherClock = false
-let weatherClock
-
-const startWeatherInterval = (initial = false) => {
-    if (!clearWeatherClock && !initial) {
-        clearInterval(weatherClock)
-        setInterval(displayWeather, 60 * 60 * 1000)
-    } else {
-        weatherClock = setInterval(
-            startWeatherInterval,
-            (60 - new Date().getMinutes()) * 60 * 1000 +
-                (60 - new Date().getSeconds()) * 1000
-        )
-    }
-
-    displayWeather()
-}
+// Weather feature disabled for privacy.
+const displayWeather = () => {}
