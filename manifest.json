@@ -1,0 +1,9 @@
+{
+    "manifest_version": 3,
+    "name": "Local New Tab",
+    "version": "1.0",
+    "description": "Use my local HTML as new tab page",
+    "chrome_url_overrides": {
+        "newtab": "index.html"
+    }
+}
