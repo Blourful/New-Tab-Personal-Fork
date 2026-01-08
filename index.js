@@ -126,8 +126,9 @@ document.addEventListener(
         window.focus()
         searchBox.focus()
 
-        if (statusButton)
-            statusButton.addEventListener('click', () => displayWeather())
+        // Privacy: Disable weather (sends location to open-meteo.com)
+        // if (statusButton)
+        //     statusButton.addEventListener('click', () => displayWeather())
 
         // Blur background when search has content
         searchBox.addEventListener('input', () => {
@@ -337,9 +338,10 @@ document.addEventListener(
             }
         })
 
-        searchBox.addEventListener('input', fetchSuggestion, {
-            passive: true
-        })
+        // Privacy: Disable search suggestions (sends queries to search.saltyaom.com)
+        // searchBox.addEventListener('input', fetchSuggestion, {
+        //     passive: true
+        // })
 
         searchBox.addEventListener('keydown', (event) => {
             if (
@@ -353,7 +355,8 @@ document.addEventListener(
                     suggestionBox.firstElementChild.focus()
                 })
         })
-
+        // Privacy: Disable weather fetch on load (sends location data)
+        //
         displayWeather(true)
 
         // const bg = id('bg')
