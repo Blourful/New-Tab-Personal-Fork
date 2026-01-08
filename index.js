@@ -48,7 +48,15 @@ const linkProviders = [
     {
         id: 'pin',
         name: 'Pinned',
-        match: (search) => !Number.isNaN(+search) && +search > 0,
+        match: (search) => {
+            const num = +search
+            const pinElement = id('pin')
+            return (
+                !Number.isNaN(num) &&
+                num > 0 &&
+                num <= (pinElement?.children.length || 0)
+            )
+        },
         link: (search) => id('pin').children[+search - 1].href,
         icon: (search) => id('pin').children[+search - 1].innerHTML
     },
