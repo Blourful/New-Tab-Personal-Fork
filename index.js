@@ -119,11 +119,15 @@ document.addEventListener(
         const modeIcon = id('search-icon-override')
         const displayedHour = id('hour')
         const displayedMinute = id('minute')
+        const statusButton = id('status')
 
         let mode = null
 
         window.focus()
         searchBox.focus()
+
+        if (statusButton)
+            statusButton.addEventListener('click', () => displayWeather())
 
         // Blur background when search has content
         searchBox.addEventListener('input', () => {
