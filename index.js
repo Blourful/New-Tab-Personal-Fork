@@ -101,58 +101,85 @@ let quotes = []
 let currentSongIndex = 0
 let currentLineIndex = 0
 
-const parseLrcFile = (content) => {
+const parseLrcFile = (content, songName) => {
     const lines = content.split('\n')
     const lyrics = []
 
     // Find the first lyric line after credits (词/曲/编曲: n-buna)
-    // Metadata is usually in the first 10 lines
     const metaRegex = /(词|曲|编曲|編曲)[:：]\s*n-buna/i
     let lastMetaIndex = -1
-    const scanLimit = Math.min(10, lines.length)
-    for (let i = 0; i < scanLimit; i++) {
+    for (let i = 0; i < lines.length; i++) {
         if (metaRegex.test(lines[i])) {
             lastMetaIndex = i
         }
     }
     const startIndex = lastMetaIndex + 1
 
-    // Read lyrics from startIndex onwards
+    // Read lyrics from startIndex onwards with timestamps
     for (let i = startIndex; i < lines.length; i++) {
         const line = lines[i].trim()
         if (line) {
-            // Extract text after timestamp [HH:MM.SS]
-            const match = line.match(/\](.+)/)
+            // Extract timestamp and text
+            const match = line.match(/\[(\d+):(\d+\.\d+)\](.+)/)
             if (match) {
-                lyrics.push(match[1])
+                const minutes = parseInt(match[1])
+                const seconds = parseFloat(match[2])
+                const timestamp = minutes * 60 + seconds
+                const text = match[3]
+                lyrics.push({ timestamp, text })
             }
         }
     }
 
-    // Pair lyrics: odd index = Chinese, even index = Japanese
+    // Sort by timestamp to ensure correct ordering
+    lyrics.sort((a, b) => a.timestamp - b.timestamp)
+
+    // Pair lyrics based on proximity of timestamps (within 0.5 seconds)
     const parsed = []
+    const used = new Set()
 
-    for (let i = 0; i < lyrics.length - 1; i += 2) {
-        const line1 = lyrics[i]
-        const line2 = lyrics[i + 1]
+    for (let i = 0; i < lyrics.length; i++) {
+        if (used.has(i)) continue
 
-        let zh = ''
-        let jp = ''
+        const current = lyrics[i]
+        let paired = null
+        let pairIndex = -1
 
-        if (isChinese(line1) && isJapanese(line2)) {
-            zh = line1
-            jp = line2
-        } else if (isJapanese(line1) && isChinese(line2)) {
-            jp = line1
-            zh = line2
-        } else {
-            // Fallback: keep the original order to avoid losing content
-            jp = 'error' + line1
-            zh = 'error' + line2
+        // Look for a matching line within 0.5 seconds
+        for (let j = i + 1; j < lyrics.length; j++) {
+            if (used.has(j)) continue
+            if (Math.abs(lyrics[j].timestamp - current.timestamp) <= 0.5) {
+                paired = lyrics[j]
+                pairIndex = j
+                break
+            }
+            // Stop searching if timestamp is too far
+            if (lyrics[j].timestamp - current.timestamp > 0.5) break
         }
 
-        parsed.push({ zh, jp })
+        if (paired) {
+            used.add(i)
+            used.add(pairIndex)
+
+            let zh = ''
+            let jp = ''
+
+            if (isChinese(current.text) && isJapanese(paired.text)) {
+                zh = current.text
+                jp = paired.text
+            } else if (isJapanese(current.text) && isChinese(paired.text)) {
+                jp = current.text
+                zh = paired.text
+            } else {
+                // Fallback: keep the original order to avoid losing content
+                jp = current.text + 'error'
+                zh = paired.text + 'error'
+            }
+
+            parsed.push({ zh, jp, song: songName })
+        }
     }
+
     return parsed
 }
 
@@ -170,13 +197,14 @@ const loadLyricsFromFolder = async () => {
             if (!res.ok) continue
 
             const content = await res.text()
-            const parsed = parseLrcFile(content)
+            const title = file.replace(/ - ヨルシカ\.lrc$/i, '')
+            const parsed = parseLrcFile(content, title)
 
-            const title = file.replace(/\.lrc$/i, '')
             allSongs.push({ title, lines: parsed })
         }
 
         quotes = allSongs
+        // console.log(quotes)
     } catch (e) {
         console.log('Could not load lyrics folder:', e)
 
@@ -267,11 +295,15 @@ const refreshQuote = (quote = null) => {
     const q = quote ?? getRandomQuote()
     const quoteText = id('quote-text')
     const quoteTranslation = id('quote-translation')
+    const quoteSong = id('quote-song')
     if (q && quoteText && quoteTranslation) {
         if (q.songIndex != null) currentSongIndex = q.songIndex
         if (q.lineIndex != null) currentLineIndex = q.lineIndex
         quoteText.textContent = `"${q.jp}"`
         quoteTranslation.textContent = `${q.zh}`
+        if (quoteSong && q.song) {
+            quoteSong.textContent = `—— ${q.song}`
+        }
     }
 }
 
