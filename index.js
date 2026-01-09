@@ -103,14 +103,17 @@ const parseLrcFile = (content) => {
     const lines = content.split('\n')
     const lyrics = []
 
-    // Find the line containing "曲" and start reading from next line
-    let startIndex = 0
-    for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes('曲')) {
-            startIndex = i + 1
-            break
+    // Find the first lyric line after credits (词/曲/编曲: n-buna)
+    // Metadata is usually in the first 10 lines
+    const metaRegex = /(词|曲|编曲|編曲)[:：]\s*n-buna/i
+    let lastMetaIndex = -1
+    const scanLimit = Math.min(10, lines.length)
+    for (let i = 0; i < scanLimit; i++) {
+        if (metaRegex.test(lines[i])) {
+            lastMetaIndex = i
         }
     }
+    const startIndex = lastMetaIndex + 1
 
     // Read lyrics from startIndex onwards
     for (let i = startIndex; i < lines.length; i++) {
@@ -141,9 +144,9 @@ const parseLrcFile = (content) => {
             jp = line1
             zh = line2
         } else {
-            // Fallback: assign based on order
-            jp = line1
-            zh = line2
+            // Fallback: keep the original order to avoid losing content
+            jp = 'error' + line1
+            zh = 'error' + line2
         }
 
         parsed.push({ zh, jp })
