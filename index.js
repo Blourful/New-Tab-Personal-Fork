@@ -313,91 +313,115 @@ document.addEventListener(
             window.location.assign(composeLink(searchBox.value))
         })
 
-        const suggestionTemplate = id('t-suggest')
-        const suggestionBox = id('suggestion')
+        // const suggestionTemplate = id('t-suggest')
+        // const suggestionBox = id('suggestion')
 
-        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+        // const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
 
-        if (!isMac) suggestionBox.classList.add('-custom-scrollbar')
+        // if (!isMac) suggestionBox.classList.add('-custom-scrollbar')
 
-        const updateSuggestion = (suggestions = []) => {
-            suggestionBox.style.display = suggestions.length ? 'flex' : 'none'
+        // const updateSuggestion = (suggestions = []) => {
+        //     suggestionBox.style.display = suggestions.length ? 'flex' : 'none'
 
-            while (suggestionBox.firstChild)
-                suggestionBox.removeChild(suggestionBox.firstChild)
+        //     while (suggestionBox.firstChild)
+        //         suggestionBox.removeChild(suggestionBox.firstChild)
 
-            suggestions.map((suggest) => {
-                const template = suggestionTemplate.content.cloneNode(true)
+        //     suggestions.map((suggest) => {
+        //         const template = suggestionTemplate.content.cloneNode(true)
 
-                const suggestion = template.children[0]
-                suggestion.textContent = suggest.label
-                suggestion.href = suggest.href
+        //         const suggestion = template.children[0]
+        //         suggestion.textContent = suggest.label
+        //         suggestion.href = suggest.href
 
-                suggestion.addEventListener('keydown', (event) => {
-                    const current = event.currentTarget
+        //         suggestion.addEventListener('keydown', (event) => {
+        //             const current = event.currentTarget
 
-                    if (
-                        current === document.activeElement &&
-                        event.code === 'ArrowLeft'
-                    ) {
-                        searchBox.focus()
-                        requestAnimationFrame(() => {
-                            searchBox.setSelectionRange(
-                                searchBox.value.length,
-                                searchBox.value.length
-                            )
-                        })
-                        return
-                    }
+        //             if (
+        //                 current === document.activeElement &&
+        //                 event.code === 'ArrowLeft'
+        //             ) {
+        //                 searchBox.focus()
+        //                 requestAnimationFrame(() => {
+        //                     searchBox.setSelectionRange(
+        //                         searchBox.value.length,
+        //                         searchBox.value.length
+        //                     )
+        //                 })
+        //                 return
+        //             }
 
-                    if (
-                        current === document.activeElement &&
-                        event.code === 'ArrowDown'
-                    ) {
-                        current.nextElementSibling.focus()
-                        return
-                    }
+        //             if (
+        //                 current === document.activeElement &&
+        //                 event.code === 'ArrowDown'
+        //             ) {
+        //                 current.nextElementSibling.focus()
+        //                 return
+        //             }
 
-                    if (
-                        current === document.activeElement &&
-                        event.code === 'ArrowUp'
-                    ) {
-                        if (current.previousElementSibling)
-                            current.previousElementSibling.focus()
-                        else {
-                            searchBox.focus()
-                            requestAnimationFrame(() => {
-                                searchBox.setSelectionRange(
-                                    searchBox.value.length,
-                                    searchBox.value.length
-                                )
-                            })
-                        }
+        //             if (
+        //                 current === document.activeElement &&
+        //                 event.code === 'ArrowUp'
+        //             ) {
+        //                 if (current.previousElementSibling)
+        //                     current.previousElementSibling.focus()
+        //                 else {
+        //                     searchBox.focus()
+        //                     requestAnimationFrame(() => {
+        //                         searchBox.setSelectionRange(
+        //                             searchBox.value.length,
+        //                             searchBox.value.length
+        //                         )
+        //                     })
+        //                 }
 
-                        return
-                    }
+        //                 return
+        //             }
 
-                    if (
-                        current === document.activeElement &&
-                        event.code === 'Tab'
-                    ) {
-                        searchBox.value = current.textContent
-                        requestAnimationFrame(() => {
-                            searchBox.focus()
-                            fetchSuggestion()
-                        })
-                        return
-                    }
-                })
+        //             if (
+        //                 current === document.activeElement &&
+        //                 event.code === 'Tab'
+        //             ) {
+        //                 searchBox.value = current.textContent
+        //                 requestAnimationFrame(() => {
+        //                     searchBox.focus()
+        //                     fetchSuggestion()
+        //                 })
+        //                 return
+        //             }
+        //         })
 
-                suggestionBox.appendChild(template)
+        //         suggestionBox.appendChild(template)
 
-                suggestionBox.scrollTo(0, 0)
-            })
-        }
+        //         suggestionBox.scrollTo(0, 0)
+        //     })
+        // }
 
         // Search hint disabled for privacy.
-        const fetchSuggestion = () => {}
+        // const fetchSuggestion = async () => {
+        //     const query = searchBox.value.trim()
+        //     if (!query) {
+        //         updateSuggestion([])
+        //         return
+        //     }
+
+        //     try {
+        //         const res = await fetch(
+        //             `/suggest?q=${encodeURIComponent(query)}`
+        //         )
+        //         const data = await res.json()
+
+        //         const suggestions = data.map((item) => ({
+        //             label: item.phrase,
+        //             href: composeLink(item.phrase)
+        //         }))
+
+        //         updateSuggestion(suggestions)
+        //     } catch (e) {
+        //         console.error('Fetch error:', e)
+        //         console.log('Suggestion fetch failed.')
+        //         updateSuggestion([])
+        //     }
+        // }
 
         searchBox.addEventListener('input', () => {
             const newMode = detectSearchMode(mode, searchBox.value)
@@ -416,25 +440,24 @@ document.addEventListener(
                 searchIcon.classList.remove('fade-out-up')
                 modeIcon.classList.add('fade-out-down')
             }
+
+            // Privacy: Disable search suggestions
+            // fetchSuggestion()
         })
 
-        // Privacy: Disable search suggestions (sends queries to search.saltyaom.com)
-        // searchBox.addEventListener('input', fetchSuggestion, {
-        //     passive: true
+        // searchBox.addEventListener('keydown', (event) => {
+        //     if (
+        //         searchBox !== document.activeElement ||
+        //         event.code !== 'ArrowDown'
+                
+        //     )
+        //         return
+
+        //     if (suggestionBox.firstElementChild)
+        //         requestAnimationFrame(() => {
+        //             suggestionBox.firstElementChild.focus()
+        //         })
         // })
-
-        searchBox.addEventListener('keydown', (event) => {
-            if (
-                searchBox !== document.activeElement ||
-                event.code !== 'ArrowDown'
-            )
-                return
-
-            if (suggestionBox.firstElementChild)
-                requestAnimationFrame(() => {
-                    suggestionBox.firstElementChild.focus()
-                })
-        })
         // Privacy: Disable weather fetch on load (sends location data)
         // displayWeather(true)
 
@@ -453,4 +476,4 @@ document.addEventListener(
 )
 
 // Weather feature disabled for privacy.
-const displayWeather = () => {}
+// const displayWeather = () => {}
