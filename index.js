@@ -88,6 +88,13 @@ const linkProviders = [
 ]
 
 const id = (id) => document.getElementById(id)
+function isChinese(text) {
+    return /[\u4e00-\u9fff]/.test(text)
+}
+
+function isJapanese(text) {
+    return /[\u3040-\u309f\u30a0-\u30ff]/.test(text)
+}
 
 // Daily Quote - parse from LRC files
 let quotes = []
@@ -119,26 +126,55 @@ const parseLrcFile = (content) => {
 
     // Pair lyrics: odd index = Chinese, even index = Japanese
     const parsed = []
+
     for (let i = 0; i < lyrics.length - 1; i += 2) {
-        parsed.push({
-            zh: lyrics[i],
-            jp: lyrics[i + 1]
-        })
+        const line1 = lyrics[i]
+        const line2 = lyrics[i + 1]
+
+        let zh = ''
+        let jp = ''
+
+        if (isChinese(line1) && isJapanese(line2)) {
+            zh = line1
+            jp = line2
+        } else if (isJapanese(line1) && isChinese(line2)) {
+            jp = line1
+            zh = line2
+        } else {
+            // Fallback: assign based on order
+            jp = line1
+            zh = line2
+        }
+
+        parsed.push({ zh, jp })
     }
     return parsed
 }
 
 const loadLyricsFromFolder = async () => {
     try {
-        // Try to load from lyrics folder
-        const response = await fetch('./lyrics/藍二乗 - ヨルシカ.lrc')
-        if (response.ok) {
-            const content = await response.text()
-            quotes = parseLrcFile(content)
+        const indexRes = await fetch('./lyrics/index.json')
+        if (!indexRes.ok) throw new Error('index.json not found')
+
+        const files = await indexRes.json()
+
+        const allQuotes = []
+
+        for (const file of files) {
+            const res = await fetch(`./lyrics/${file}`)
+            if (!res.ok) continue
+
+            const content = await res.text()
+            const parsed = parseLrcFile(content)
+
+            allQuotes.push(...parsed)
         }
+
+        quotes = allQuotes
     } catch (e) {
         console.log('Could not load lyrics folder:', e)
-        // Fallback to default quotes
+
+        // fallback
         quotes = [
             {
                 jp: 'さよならを言えずに 今日もひとり歩く',
@@ -149,6 +185,17 @@ const loadLyricsFromFolder = async () => {
 }
 
 const getRandomQuote = () => quotes[Math.floor(Math.random() * quotes.length)]
+
+// Update the displayed quote with a random one
+const refreshQuote = () => {
+    const q = getRandomQuote()
+    const quoteText = id('quote-text')
+    const quoteTranslation = id('quote-translation')
+    if (q && quoteText && quoteTranslation) {
+        quoteText.textContent = `"${q.jp}"`
+        quoteTranslation.textContent = `${q.zh}`
+    }
+}
 
 // Background is static image, no need to save video progress
 // window.addEventListener('visibilitychange', () => {
@@ -200,12 +247,12 @@ document.addEventListener(
         searchBox.focus()
 
         // Display random quote on each refresh
-        const dailyQuote = getRandomQuote()
-        const quoteText = id('quote-text')
-        const quoteTranslation = id('quote-translation')
-        if (quoteText && quoteTranslation) {
-            quoteText.textContent = `"${dailyQuote.jp}"`
-            quoteTranslation.textContent = `${dailyQuote.zh}`
+        refreshQuote()
+
+        // Click lyrics to randomize to another quote
+        const quoteContainer = id('quote-container')
+        if (quoteContainer) {
+            quoteContainer.addEventListener('click', () => refreshQuote())
         }
 
         // Privacy: Disable weather (sends location to open-meteo.com)
