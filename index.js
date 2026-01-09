@@ -89,6 +89,58 @@ const linkProviders = [
 
 const id = (id) => document.getElementById(id)
 
+// Daily Quote
+const quotes = [
+    {
+        jp: '夜に駆ける 心のままに',
+        zh: '奔向夜晚，随心而行'
+    },
+    {
+        jp: '君と出会えた奇跡を抱きしめる',
+        zh: '紧抱与你相遇的奇迹'
+    },
+    {
+        jp: '泣きたい夜も 笑える日も',
+        zh: '无论是想哭的夜晚，还是能笑的日子'
+    },
+    {
+        jp: '夢の中でさえ 君を探してしまう',
+        zh: '即使在梦中，也会寻找你'
+    },
+    {
+        jp: 'あの日見た景色が 今も胸を締め付ける',
+        zh: '那天见到的风景，如今仍让心紧缩'
+    },
+    {
+        jp: '星の数ほどの想いを 君に届けたい',
+        zh: '像星星一样多的思念，我想传达给你'
+    },
+    {
+        jp: '言葉にならない感情が 胸の奥で揺れている',
+        zh: '无法化为言语的情感，在心底摇曳'
+    },
+    {
+        jp: '時は流れても この気持ちは色褪せない',
+        zh: '时间流逝，这份心情却不褪色'
+    },
+    {
+        jp: '切ない夜に寄り添うメロディー',
+        zh: '在忧伤的夜晚伴随左右的旋律'
+    },
+    {
+        jp: 'さよならを言えずに 今日もひとり歩く',
+        zh: '没能说再见，今天也独自走着'
+    }
+]
+
+const getQuoteOfDay = () => {
+    const today = new Date()
+    const dayOfYear = Math.floor(
+        (today - new Date(today.getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24
+    )
+    return quotes[dayOfYear % quotes.length]
+}
+
 // Background is static image, no need to save video progress
 // window.addEventListener('visibilitychange', () => {
 //     const bg = id('bg')
@@ -135,6 +187,15 @@ document.addEventListener(
         window.focus()
         searchBox.focus()
 
+        // Display daily quote
+        const dailyQuote = getQuoteOfDay()
+        const quoteText = id('quote-text')
+        const quoteTranslation = id('quote-translation')
+        if (quoteText && quoteTranslation) {
+            quoteText.textContent = `"${dailyQuote.jp}"`
+            quoteTranslation.textContent = `${dailyQuote.zh}`
+        }
+
         // Privacy: Disable weather (sends location to open-meteo.com)
         // if (statusButton)
         //     statusButton.addEventListener('click', () => displayWeather())
@@ -177,7 +238,7 @@ document.addEventListener(
         }
 
         // Update clock every minute to keep in sync with system
-        setInterval(startClock, 60000)
+        setInterval(startClock, 20000)
         // Initialize
         startClock()
 
