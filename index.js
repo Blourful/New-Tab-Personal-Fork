@@ -89,57 +89,66 @@ const linkProviders = [
 
 const id = (id) => document.getElementById(id)
 
-// Daily Quote
-const quotes = [
-    {
-        jp: '夜に駆ける 心のままに',
-        zh: '奔向夜晚，随心而行'
-    },
-    {
-        jp: '君と出会えた奇跡を抱きしめる',
-        zh: '紧抱与你相遇的奇迹'
-    },
-    {
-        jp: '泣きたい夜も 笑える日も',
-        zh: '无论是想哭的夜晚，还是能笑的日子'
-    },
-    {
-        jp: '夢の中でさえ 君を探してしまう',
-        zh: '即使在梦中，也会寻找你'
-    },
-    {
-        jp: 'あの日見た景色が 今も胸を締め付ける',
-        zh: '那天见到的风景，如今仍让心紧缩'
-    },
-    {
-        jp: '星の数ほどの想いを 君に届けたい',
-        zh: '像星星一样多的思念，我想传达给你'
-    },
-    {
-        jp: '言葉にならない感情が 胸の奥で揺れている',
-        zh: '无法化为言语的情感，在心底摇曳'
-    },
-    {
-        jp: '時は流れても この気持ちは色褪せない',
-        zh: '时间流逝，这份心情却不褪色'
-    },
-    {
-        jp: '切ない夜に寄り添うメロディー',
-        zh: '在忧伤的夜晚伴随左右的旋律'
-    },
-    {
-        jp: 'さよならを言えずに 今日もひとり歩く',
-        zh: '没能说再见，今天也独自走着'
-    }
-]
+// Daily Quote - parse from LRC files
+let quotes = []
 
-const getQuoteOfDay = () => {
-    const today = new Date()
-    const dayOfYear = Math.floor(
-        (today - new Date(today.getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24
-    )
-    return quotes[dayOfYear % quotes.length]
+const parseLrcFile = (content) => {
+    const lines = content.split('\n')
+    const lyrics = []
+
+    // Find the line containing "曲" and start reading from next line
+    let startIndex = 0
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes('曲')) {
+            startIndex = i + 1
+            break
+        }
+    }
+
+    // Read lyrics from startIndex onwards
+    for (let i = startIndex; i < lines.length; i++) {
+        const line = lines[i].trim()
+        if (line) {
+            // Extract text after timestamp [HH:MM.SS]
+            const match = line.match(/\](.+)/)
+            if (match) {
+                lyrics.push(match[1])
+            }
+        }
+    }
+
+    // Pair lyrics: odd index = Chinese, even index = Japanese
+    const parsed = []
+    for (let i = 0; i < lyrics.length - 1; i += 2) {
+        parsed.push({
+            zh: lyrics[i],
+            jp: lyrics[i + 1]
+        })
+    }
+    return parsed
 }
+
+const loadLyricsFromFolder = async () => {
+    try {
+        // Try to load from lyrics folder
+        const response = await fetch('./lyrics/藍二乗 - ヨルシカ.lrc')
+        if (response.ok) {
+            const content = await response.text()
+            quotes = parseLrcFile(content)
+        }
+    } catch (e) {
+        console.log('Could not load lyrics folder:', e)
+        // Fallback to default quotes
+        quotes = [
+            {
+                jp: 'さよならを言えずに 今日もひとり歩く',
+                zh: '没能说再见，今天也独自走着'
+            }
+        ]
+    }
+}
+
+const getRandomQuote = () => quotes[Math.floor(Math.random() * quotes.length)]
 
 // Background is static image, no need to save video progress
 // window.addEventListener('visibilitychange', () => {
@@ -175,6 +184,9 @@ const composeLink = (search) => {
 document.addEventListener(
     'DOMContentLoaded',
     async () => {
+        // Load lyrics from folder first
+        await loadLyricsFromFolder()
+
         const searchBox = id('search-value')
         const searchIcon = id('search-icon')
         const modeIcon = id('search-icon-override')
@@ -187,8 +199,8 @@ document.addEventListener(
         window.focus()
         searchBox.focus()
 
-        // Display daily quote
-        const dailyQuote = getQuoteOfDay()
+        // Display random quote on each refresh
+        const dailyQuote = getRandomQuote()
         const quoteText = id('quote-text')
         const quoteTranslation = id('quote-translation')
         if (quoteText && quoteTranslation) {
