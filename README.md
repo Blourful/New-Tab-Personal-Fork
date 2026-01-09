@@ -9,6 +9,6 @@ It is modified for individual use with the following changes:
 
 > Note: This fork is intended for **individual use only**.
 
-![demo](./images/demo.png)
+<!-- ![demo](./images/demo.png) -->
 
 For the full original usage instructions, please refer to the original repository.
