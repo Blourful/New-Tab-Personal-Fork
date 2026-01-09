@@ -96,8 +96,10 @@ function isJapanese(text) {
     return /[\u3040-\u309f\u30a0-\u30ff]/.test(text)
 }
 
-// Daily Quote - parse from LRC files
+// Daily Quote - per-song buckets from LRC files
 let quotes = []
+let currentSongIndex = 0
+let currentLineIndex = 0
 
 const parseLrcFile = (content) => {
     const lines = content.split('\n')
@@ -161,7 +163,7 @@ const loadLyricsFromFolder = async () => {
 
         const files = await indexRes.json()
 
-        const allQuotes = []
+        const allSongs = []
 
         for (const file of files) {
             const res = await fetch(`./lyrics/${file}`)
@@ -170,31 +172,104 @@ const loadLyricsFromFolder = async () => {
             const content = await res.text()
             const parsed = parseLrcFile(content)
 
-            allQuotes.push(...parsed)
+            const title = file.replace(/\.lrc$/i, '')
+            allSongs.push({ title, lines: parsed })
         }
 
-        quotes = allQuotes
+        quotes = allSongs
     } catch (e) {
         console.log('Could not load lyrics folder:', e)
 
         // fallback
         quotes = [
             {
-                jp: 'さよならを言えずに 今日もひとり歩く',
-                zh: '没能说再见，今天也独自走着'
+                title: 'fallback',
+                lines: [
+                    {
+                        jp: 'さよならを言えずに 今日もひとり歩く',
+                        zh: '没能说再见，今天也独自走着'
+                    }
+                ]
             }
         ]
     }
 }
 
-const getRandomQuote = () => quotes[Math.floor(Math.random() * quotes.length)]
+const getQuoteByIndex = () => {
+    if (!quotes.length) return null
+
+    const song = quotes[currentSongIndex % quotes.length]
+    if (!song?.lines?.length) return null
+
+    const line = song.lines[currentLineIndex % song.lines.length]
+    return { ...line, title: song.title }
+}
+
+const getRandomQuote = () => {
+    if (!quotes.length) return null
+
+    const songIndex = Math.floor(Math.random() * quotes.length)
+    const song = quotes[songIndex]
+    if (!song?.lines?.length) return null
+
+    const lineIndex = Math.floor(Math.random() * song.lines.length)
+    const line = song.lines[lineIndex]
+
+    // Include indices so click-to-advance can continue in sequence
+    return { ...line, title: song.title, songIndex, lineIndex }
+}
+
+const advanceQuote = () => {
+    if (!quotes.length) return
+
+    const song = quotes[currentSongIndex % quotes.length]
+    currentLineIndex += 1
+
+    if (!song?.lines?.length || currentLineIndex >= song.lines.length) {
+        currentSongIndex = (currentSongIndex + 1) % quotes.length
+        currentLineIndex = 0
+    }
+
+    const next = getQuoteByIndex()
+    if (!next) return
+
+    refreshQuote({
+        ...next,
+        songIndex: currentSongIndex,
+        lineIndex: currentLineIndex
+    })
+}
+
+const retreatQuote = () => {
+    if (!quotes.length) return
+
+    currentLineIndex -= 1
+
+    if (currentLineIndex < 0) {
+        currentSongIndex =
+            (currentSongIndex - 1 + quotes.length) % quotes.length
+        const song = quotes[currentSongIndex]
+        currentLineIndex = song?.lines?.length ? song.lines.length - 1 : 0
+    }
+
+    const prev = getQuoteByIndex()
+    if (!prev) return
+
+    refreshQuote({
+        ...prev,
+        songIndex: currentSongIndex,
+        lineIndex: currentLineIndex
+    })
+}
 
 // Update the displayed quote with a random one
-const refreshQuote = () => {
-    const q = getRandomQuote()
+const refreshQuote = (quote = null) => {
+    const q = quote ?? getRandomQuote()
     const quoteText = id('quote-text')
     const quoteTranslation = id('quote-translation')
     if (q && quoteText && quoteTranslation) {
+        if (q.songIndex != null) currentSongIndex = q.songIndex
+        if (q.lineIndex != null) currentLineIndex = q.lineIndex
         quoteText.textContent = `"${q.jp}"`
         quoteTranslation.textContent = `${q.zh}`
     }
@@ -249,13 +324,17 @@ document.addEventListener(
         window.focus()
         searchBox.focus()
 
-        // Display random quote on each refresh
+        // Display first quote
         refreshQuote()
 
-        // Click lyrics to randomize to another quote
+        // Click lyrics to show next line; at song end, go to next song
         const quoteContainer = id('quote-container')
         if (quoteContainer) {
-            quoteContainer.addEventListener('click', () => refreshQuote())
+            quoteContainer.addEventListener('click', () => advanceQuote())
+            quoteContainer.addEventListener('contextmenu', (event) => {
+                event.preventDefault()
+                retreatQuote()
+            })
         }
 
         // Privacy: Disable weather (sends location to open-meteo.com)
@@ -449,7 +528,7 @@ document.addEventListener(
         //     if (
         //         searchBox !== document.activeElement ||
         //         event.code !== 'ArrowDown'
-                
+
         //     )
         //         return
 
