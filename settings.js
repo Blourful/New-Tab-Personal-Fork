@@ -42,7 +42,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const activeBtn = settingsMenu.querySelector('.toggle-btn.active')
-    if (activeBtn) {
+    const savedAction = (() => {
+        try {
+            return localStorage.getItem('lyricsToggle')
+        } catch (e) {
+            return null
+        }
+    })()
+
+    if (savedAction) {
+        const savedBtn = settingsMenu.querySelector(
+            `.toggle-btn[data-action="${savedAction}"]`
+        )
+        if (savedBtn) {
+            toggleButtons.forEach((b) => b.classList.remove('active'))
+            savedBtn.classList.add('active')
+            applyToggle(savedAction)
+        } else if (activeBtn) {
+            applyToggle(activeBtn.getAttribute('data-action'))
+        }
+    } else if (activeBtn) {
         applyToggle(activeBtn.getAttribute('data-action'))
     }
 
@@ -50,7 +69,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             toggleButtons.forEach((b) => b.classList.remove('active'))
             btn.classList.add('active')
-            applyToggle(btn.getAttribute('data-action'))
+            const action = btn.getAttribute('data-action')
+            applyToggle(action)
+            try {
+                localStorage.setItem('lyricsToggle', action)
+            } catch (e) {}
         })
     })
 })
