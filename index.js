@@ -373,14 +373,37 @@ document.addEventListener(
         // if (statusButton)
         //     statusButton.addEventListener('click', () => displayWeather())
 
-        // Blur background when search has content
-        searchBox.addEventListener('input', () => {
-            if (searchBox.value.trim().length > 0) {
-                document.body.classList.add('search-focused')
-            } else {
-                document.body.classList.remove('search-focused')
-            }
-        })
+        // Blur background when search has content AND is focused (or hint is focused)
+        const updateBackgroundBlur = () => {
+            // Use setTimeout to allow focus to move to suggestion items
+            setTimeout(() => {
+                const isSearchFocused = document.activeElement === searchBox
+                const isHintFocused = suggestionBox.contains(
+                    document.activeElement
+                )
+
+                if (
+                    searchBox.value.trim().length > 0 &&
+                    (isSearchFocused || isHintFocused)
+                ) {
+                    document.body.classList.add('search-focused')
+                    // Show cached suggestions when focused
+                    if (cachedSuggestions.length > 0) {
+                        suggestionBox.style.display = 'flex'
+                    }
+                } else {
+                    document.body.classList.remove('search-focused')
+                    // Hide suggestions when unfocused but keep the cache
+                    if (searchBox.value.trim().length > 0) {
+                        suggestionBox.style.display = 'none'
+                    }
+                }
+            }, 0)
+        }
+
+        searchBox.addEventListener('input', updateBackgroundBlur)
+        searchBox.addEventListener('focus', updateBackgroundBlur)
+        searchBox.addEventListener('blur', updateBackgroundBlur)
 
         // Continue video from last time (not needed for static image background)
         // const timestamp = localStorage.getItem('bg:time')
@@ -431,8 +454,12 @@ document.addEventListener(
 
         if (!isMac) suggestionBox.classList.add('-custom-scrollbar')
 
-        const updateSuggestion = (suggestions = []) => {
-            suggestionBox.style.display = suggestions.length ? 'flex' : 'none'
+        let cachedSuggestions = []
+
+        const updateSuggestion = (suggestions = [], forceShow = true) => {
+            cachedSuggestions = suggestions
+            suggestionBox.style.display =
+                suggestions.length && forceShow ? 'flex' : 'none'
 
             while (suggestionBox.firstChild)
                 suggestionBox.removeChild(suggestionBox.firstChild)
@@ -500,6 +527,9 @@ document.addEventListener(
                         return
                     }
                 })
+
+                suggestion.addEventListener('focus', updateBackgroundBlur)
+                suggestion.addEventListener('blur', updateBackgroundBlur)
 
                 suggestionBox.appendChild(template)
 
