@@ -365,15 +365,22 @@
             right: 0;
             z-index: 1;
             user-select: none;
-            display: flex;
             justify-content: center;
             align-items: flex-end;
             gap: 20px;
             padding: 0 20px;
+
         }
 
         #quote-lyrics {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
             text-align: center;
+            width: 100%;
+            cursor: pointer;
+
         }
 
         #quote-text {
@@ -549,7 +556,7 @@
         }
 
         .bg-select .selected:hover {
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.3);
             color: rgba(255, 255, 255, 1);
         }
 

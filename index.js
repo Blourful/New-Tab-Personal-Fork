@@ -360,10 +360,10 @@ document.addEventListener(
         refreshQuote()
 
         // Click lyrics to show next line; at song end, go to next song
-        const quoteContainer = id('quote-container')
-        if (quoteContainer) {
-            quoteContainer.addEventListener('click', () => advanceQuote())
-            quoteContainer.addEventListener('contextmenu', (event) => {
+        const quoteLyrics = id('quote-lyrics')
+        if (quoteLyrics) {
+            quoteLyrics.addEventListener('click', () => advanceQuote())
+            quoteLyrics.addEventListener('contextmenu', (event) => {
                 event.preventDefault()
                 retreatQuote()
             })

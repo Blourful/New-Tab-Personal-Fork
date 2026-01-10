@@ -28,15 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')
 
+        // Get the zoom/scale level of the page
+        const zoom = window.devicePixelRatio || 1
+
         // Get the entire selected element area
         const selectedRect = bgSelectSelected.getBoundingClientRect()
 
         // Calculate position relative to background image
         const bgRect = bgImg.getBoundingClientRect()
-        const relativeLeft = selectedRect.left - bgRect.left
-        const relativeTop = selectedRect.top - bgRect.top
-        const relativeWidth = selectedRect.width
-        const relativeHeight = selectedRect.height
+        const relativeLeft = (selectedRect.left - bgRect.left) * zoom
+        const relativeTop = (selectedRect.top - bgRect.top) * zoom
+        const relativeWidth = selectedRect.width * zoom
+        const relativeHeight = selectedRect.height * zoom
 
         canvas.width = bgImg.naturalWidth || bgImg.width
         canvas.height = bgImg.naturalHeight || bgImg.height
@@ -44,8 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.drawImage(bgImg, 0, 0)
 
         // Calculate scale ratio
-        const scaleX = canvas.width / bgRect.width
-        const scaleY = canvas.height / bgRect.height
+        const scaleX = canvas.width / (bgRect.width * zoom)
+        const scaleY = canvas.height / (bgRect.height * zoom)
 
         // Calculate sampling area on canvas
         const sampleLeft = Math.round(relativeLeft * scaleX)
