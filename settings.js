@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bgSelectSelected = settingsMenu.querySelector('.selected')
     const bgSelectItems = settingsMenu.querySelector('.options')
     const bgSelectDivs = settingsMenu.querySelectorAll('.options div')
+    let currentActiveBgItem = null
 
     const iconTemplate = document.getElementById('icon-settings')
     if (iconTemplate) {
