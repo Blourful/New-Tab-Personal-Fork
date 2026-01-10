@@ -1,3 +1,6 @@
 .DS_Store
 test.js
 proxy.ts
+start-proxy.vbs
+tempCodeRunnerFile.bat
+start-proxy.bat
