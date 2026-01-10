@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Miku!</title>
+    <meta charset="utf8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preload" href="./images/qiyue.png" as="image" type="image/png" />
+
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐳</text></svg>" />
+
+    <style>
+        html {
+            background-color: #efeff4;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        ::selection,
+        ::-webkit-selection {
+            background-color: rgba(0, 0, 0, 0.15);
+        }
+
+        #opened {
+            width: 100%;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0 16px;
+            background: linear-gradient(rgba(0, 0, 0, 0) 100%,
+                    transparent 100%),
+                /* url(./blue_aka.png);
+                background-size: cover;
+                background-position: center; */
+        }
+
+        #bg,
+        #overlay {
+            position: fixed;
+            z-index: -2;
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        #bg {
+            object-fit: cover;
+            object-position: center;
+            transition: filter 0.5s ease-out;
+            user-select: none;
+            -webkit-user-drag: none;
+            pointer-events: none;
+            /* animation: fadeIn 1s ease-in; */
+        }
+
+        body.search-focused #bg {
+            filter: blur(8px);
+        }
+
+        #overlay {
+            z-index: -1;
+            background: radial-gradient(circle,
+                    rgba(0, 0, 0, 0.1875) 0%,
+                    rgba(0, 0, 0, 0) 50%);
+
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-self: center;
+            width: 100%;
+            max-width: 620px;
+            min-height: 100vh;
+            margin: 0 auto;
+            padding: 16px 0 52px 0;
+        }
+
+        #time {
+            z-index: 0;
+            top: calc(50vh - 120px - 100px);
+            left: 0;
+            margin: 0;
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 120px;
+            /* font-variant-numeric: tabular-nums; */
+            font-weight: 600;
+            opacity: 0.9;
+            color: #fff;
+            user-select: none;
+            -webkit-user-drag: none;
+            pointer-events: none;
+            /* text-shadow: 0 8px 32px rgba(255, 255, 255, 0.375); */
+            /* text-shadow: 1px 1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
+                    -1px -1px 0 #000; */
+        }
+
+        #search {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            width: 100%;
+            height: 56px;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background-color: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(8px);
+            /* border: 3px solid #eee; */
+            border-radius: 24px;
+            /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.0875),
+                    0 4px 16px rgba(0, 0, 0, 0.0875),
+                    0 8px 32px rgba(0, 0, 0, 0.0875); */
+            overflow: hidden;
+        }
+
+        #search svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        #search>.icon {
+            color: currentColor;
+            margin: 0 12px 0 16px;
+        }
+
+        #search>.input {
+            display: flex;
+            flex: 1;
+            height: inherit;
+            font-weight: 400;
+            padding: 0;
+            color: currentColor;
+            appearance: none;
+            font-size: 24px;
+            background-color: transparent;
+            border: 0;
+            outline: none;
+            user-select: none;
+        }
+
+        #search>.input::placeholder {
+            color: #fff;
+            font-weight: 400;
+        }
+
+        #search>.submit {
+            appearance: none;
+            width: 56px;
+            height: 56px;
+            padding: 0;
+            color: currentColor;
+            background-color: transparent;
+            border: 0;
+            outline: none;
+            transition: color 0.15s ease-out,
+                background-color 0.15s ease-out;
+            cursor: pointer;
+        }
+
+        #search>.submit:hover,
+        #search>.submit:focus {
+            /* color: rgb(0, 123, 255); */
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        #status {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 16px;
+            width: 100%;
+            color: #fff;
+            transform: translateY(-16px);
+            user-select: none;
+            appearance: none;
+            background-color: transparent;
+            border: 0;
+        }
+
+        .status {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: 400;
+            margin: 0;
+            cursor: default;
+            user-select: none;
+            -webkit-user-drag: none;
+            pointer-events: none;
+            /* text-shadow: 0 0 4px rgba(0, 0, 0, 0.375); */
+        }
+
+        #status>.status>span {
+            margin-left: 4px;
+        }
+
+        #suggestion {
+            position: absolute;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-height: calc(50vh - 64px);
+            color: #fff;
+            gap: 4px;
+            margin-top: 8px;
+            padding: 8px 44px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background-color: rgba(0, 0, 0, 0.125);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            overflow-y: auto;
+
+        }
+
+        .-custom-scrollbar::-webkit-scrollbar {
+            width: 0.75vw;
+            background-color: transparent;
+        }
+
+        .-custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.375);
+            border-radius: 99px;
+        }
+
+        .-custom-scrollbar::-webkit-scrollbar-track {
+            margin: 15px 0;
+        }
+
+        /* #suggestion::-webkit-scrollbar-thumb */
+
+        .suggest {
+            width: 100%;
+            color: #fff;
+            font-size: 21px;
+            font-weight: 400;
+            text-decoration: none;
+            gap: 4px;
+            padding: 8px 8px;
+            border-radius: 16px;
+            border: 1px solid transparent;
+            outline: none;
+            transition: background-color 0.12s ease-out,
+                border-color 0.12s ease-out;
+            cursor: pointer;
+        }
+
+        .suggest:hover,
+        .suggest:focus {
+            background-color: rgba(255, 255, 255, 0.125);
+        }
+
+        .suggest:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .suggest:focus {
+            border-color: #fff;
+        }
+
+        #engine {
+            position: relative;
+            margin-top: 8px;
+        }
+
+        #pin {
+            position: absolute;
+            display: grid;
+            grid-template-columns: repeat(9, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+            user-select: none;
+        }
+
+        #pin>a,
+        #pin>button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 20px;
+            background-color: rgba(0, 0, 0, 0.125);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(8px);
+            transition: transform 0.125s ease-out;
+        }
+
+        #pin>a:hover,
+        #pin>a:focus,
+        #pin>button:hover,
+        #pin>a:focus {
+            transform: scale(1.2);
+            outline-color: #fff;
+            outline-offset: 4px;
+            outline-width: 1px;
+            /* background-color: rgba(255, 255, 255, 0.125); */
+        }
+
+        #pin>a>svg {
+            position: absolute;
+            padding: 8px;
+        }
+
+        .input-search-element {
+            position: relative;
+            aspect-ratio: 1;
+            height: 100%;
+        }
+
+        .input-search-element-inner {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .transition {
+            transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+        }
+
+        .fade-out-up {
+            opacity: 0;
+            transform: translateY(-16px);
+        }
+
+        .fade-out-down {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+
+        .p-0\.5 {
+            padding: 0.125rem;
+        }
+
+        #weather-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        #weather-icon>svg {
+            padding: 0.125rem;
+        }
+
+        #quote-container {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            z-index: 1;
+            user-select: none;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 20px;
+            padding: 0 20px;
+
+        }
+
+        #quote-lyrics {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+            text-align: center;
+            width: 100%;
+            cursor: pointer;
+
+        }
+
+        #quote-text {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: "Meiryo", "Yu Gothic UI", "Noto Sans JP", monospace;
+            font-style: italic;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        #quote-translation {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 6px 0 0 0;
+            font-family: '润植家如印奏章楷', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-weight: 400;
+        }
+
+        #quote-song {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.78);
+            margin: 0;
+            padding-bottom: 2px;
+            font-family: "Yu Gothic UI", "Noto Sans JP", sans-serif;
+            font-style: italic;
+            white-space: nowrap;
+            text-align: end;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Settings Menu Styles */
+        .settings-menu {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .settings-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0);
+            cursor: pointer;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .settings-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .settings-dropdown {
+            position: absolute;
+            top: 48px;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 8px;
+            /* overflow: hidden; */
+            min-width: 140px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .settings-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .menu-item {
+            padding: 12px 16px;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-size: 14px;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 1);
+        }
+
+        .menu-label {
+            padding: 12px 16px 6px 16px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            cursor: default;
+        }
+
+        .settings-toggle {
+            display: flex;
+            width: 100%;
+            padding: 0 12px 12px 12px;
+            gap: 0;
+
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 10px 0;
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease,
+                border-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .toggle-btn:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+            border-right: 0;
+        }
+
+        .toggle-btn:last-child {
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+            border-left: 0;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 1);
+        }
+
+        .toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        .toggle-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(0, 0, 0, 0.9);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .bg-select {
+            width: 100%;
+            padding: 0 12px 12px 12px;
+            font-size: 14px;
+            user-select: none;
+        }
+
+        .bg-select .selected {
+            display: none;
+        }
+
+        .bg-select .options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .bg-select .options div {
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.75);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .bg-select .options div:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .bg-select .options div.active {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 1);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 0 12px rgba(255, 255, 255, 0.2);
+        }
+
+        .bg-select .options div.hidden {
+            display: none;
+        }
+    </style>
+
+  <script type="module" crossorigin src="/assets/main-WnTPma5f.js"></script>
+</head>
+
+<body id="opened">
+    <template id="t-suggest">
+        <a class="suggest"></a>
+    </template>
+
+    <template id="icon-settings">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+            <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M12 8.25C9.92894 8.25 8.25 9.92893 8.25 12C8.25 14.0711 9.92894 15.75 12 15.75C14.0711 15.75 15.75 14.0711 15.75 12C15.75 9.92893 14.0711 8.25 12 8.25ZM9.75 12C9.75 10.7574 10.7574 9.75 12 9.75C13.2426 9.75 14.25 10.7574 14.25 12C14.25 13.2426 13.2426 14.25 12 14.25C10.7574 14.25 9.75 13.2426 9.75 12Z"
+                fill="currentColor"></path>
+            <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M11.9747 1.25C11.5303 1.24999 11.1592 1.24999 10.8546 1.27077C10.5375 1.29241 10.238 1.33905 9.94761 1.45933C9.27379 1.73844 8.73843 2.27379 8.45932 2.94762C8.31402 3.29842 8.27467 3.66812 8.25964 4.06996C8.24756 4.39299 8.08454 4.66251 7.84395 4.80141C7.60337 4.94031 7.28845 4.94673 7.00266 4.79568C6.64714 4.60777 6.30729 4.45699 5.93083 4.40743C5.20773 4.31223 4.47642 4.50819 3.89779 4.95219C3.64843 5.14353 3.45827 5.3796 3.28099 5.6434C3.11068 5.89681 2.92517 6.21815 2.70294 6.60307L2.67769 6.64681C2.45545 7.03172 2.26993 7.35304 2.13562 7.62723C1.99581 7.91267 1.88644 8.19539 1.84541 8.50701C1.75021 9.23012 1.94617 9.96142 2.39016 10.5401C2.62128 10.8412 2.92173 11.0602 3.26217 11.2741C3.53595 11.4461 3.68788 11.7221 3.68786 12C3.68785 12.2778 3.53592 12.5538 3.26217 12.7258C2.92169 12.9397 2.62121 13.1587 2.39007 13.4599C1.94607 14.0385 1.75012 14.7698 1.84531 15.4929C1.88634 15.8045 1.99571 16.0873 2.13552 16.3727C2.26983 16.6469 2.45535 16.9682 2.67758 17.3531L2.70284 17.3969C2.92507 17.7818 3.11058 18.1031 3.28089 18.3565C3.45817 18.6203 3.64833 18.8564 3.89769 19.0477C4.47632 19.4917 5.20763 19.6877 5.93073 19.5925C6.30717 19.5429 6.647 19.3922 7.0025 19.2043C7.28833 19.0532 7.60329 19.0596 7.8439 19.1986C8.08452 19.3375 8.24756 19.607 8.25964 19.9301C8.27467 20.3319 8.31403 20.7016 8.45932 21.0524C8.73843 21.7262 9.27379 22.2616 9.94761 22.5407C10.238 22.661 10.5375 22.7076 10.8546 22.7292C11.1592 22.75 11.5303 22.75 11.9747 22.75H12.0252C12.4697 22.75 12.8407 22.75 13.1454 22.7292C13.4625 22.7076 13.762 22.661 14.0524 22.5407C14.7262 22.2616 15.2616 21.7262 15.5407 21.0524C15.686 20.7016 15.7253 20.3319 15.7403 19.93C15.7524 19.607 15.9154 19.3375 16.156 19.1985C16.3966 19.0596 16.7116 19.0532 16.9974 19.2042C17.3529 19.3921 17.6927 19.5429 18.0692 19.5924C18.7923 19.6876 19.5236 19.4917 20.1022 19.0477C20.3516 18.8563 20.5417 18.6203 20.719 18.3565C20.8893 18.1031 21.0748 17.7818 21.297 17.3969L21.3223 17.3531C21.5445 16.9682 21.7301 16.6468 21.8644 16.3726C22.0042 16.0872 22.1135 15.8045 22.1546 15.4929C22.2498 14.7697 22.0538 14.0384 21.6098 13.4598C21.3787 13.1586 21.0782 12.9397 20.7378 12.7258C20.464 12.5538 20.3121 12.2778 20.3121 11.9999C20.3121 11.7221 20.464 11.4462 20.7377 11.2742C21.0783 11.0603 21.3788 10.8414 21.6099 10.5401C22.0539 9.96149 22.2499 9.23019 22.1547 8.50708C22.1136 8.19546 22.0043 7.91274 21.8645 7.6273C21.7302 7.35313 21.5447 7.03183 21.3224 6.64695L21.2972 6.60318C21.0749 6.21825 20.8894 5.89688 20.7191 5.64347C20.5418 5.37967 20.3517 5.1436 20.1023 4.95225C19.5237 4.50826 18.7924 4.3123 18.0692 4.4075C17.6928 4.45706 17.353 4.60782 16.9975 4.79572C16.7117 4.94679 16.3967 4.94036 16.1561 4.80144C15.9155 4.66253 15.7524 4.39297 15.7403 4.06991C15.7253 3.66808 15.686 3.2984 15.5407 2.94762C15.2616 2.27379 14.7262 1.73844 14.0524 1.45933C13.762 1.33905 13.4625 1.29241 13.1454 1.27077C12.8407 1.24999 12.4697 1.24999 12.0252 1.25H11.9747ZM10.5216 2.84515C10.5988 2.81319 10.716 2.78372 10.9567 2.76729C11.2042 2.75041 11.5238 2.75 12 2.75C12.4762 2.75 12.7958 2.75041 13.0432 2.76729C13.284 2.78372 13.4012 2.81319 13.4783 2.84515C13.7846 2.97202 14.028 3.21536 14.1548 3.52165C14.1949 3.61826 14.228 3.76887 14.2414 4.12597C14.271 4.91835 14.68 5.68129 15.4061 6.10048C16.1321 6.51968 16.9974 6.4924 17.6984 6.12188C18.0143 5.9549 18.1614 5.90832 18.265 5.89467C18.5937 5.8514 18.9261 5.94047 19.1891 6.14228C19.2554 6.19312 19.3395 6.27989 19.4741 6.48016C19.6125 6.68603 19.7726 6.9626 20.0107 7.375C20.2488 7.78741 20.4083 8.06438 20.5174 8.28713C20.6235 8.50382 20.6566 8.62007 20.6675 8.70287C20.7108 9.03155 20.6217 9.36397 20.4199 9.62698C20.3562 9.70995 20.2424 9.81399 19.9397 10.0041C19.2684 10.426 18.8122 11.1616 18.8121 11.9999C18.8121 12.8383 19.2683 13.574 19.9397 13.9959C20.2423 14.186 20.3561 14.29 20.4198 14.373C20.6216 14.636 20.7107 14.9684 20.6674 15.2971C20.6565 15.3799 20.6234 15.4961 20.5173 15.7128C20.4082 15.9355 20.2487 16.2125 20.0106 16.6249C19.7725 17.0373 19.6124 17.3139 19.474 17.5198C19.3394 17.72 19.2553 17.8068 19.189 17.8576C18.926 18.0595 18.5936 18.1485 18.2649 18.1053C18.1613 18.0916 18.0142 18.045 17.6983 17.8781C16.9973 17.5075 16.132 17.4803 15.4059 17.8995C14.68 18.3187 14.271 19.0816 14.2414 19.874C14.228 20.2311 14.1949 20.3817 14.1548 20.4784C14.028 20.7846 13.7846 21.028 13.4783 21.1549C13.4012 21.1868 13.284 21.2163 13.0432 21.2327C12.7958 21.2496 12.4762 21.25 12 21.25C11.5238 21.25 11.2042 21.2496 10.9567 21.2327C10.716 21.2163 10.5988 21.1868 10.5216 21.1549C10.2154 21.028 9.97201 20.7846 9.84514 20.4784C9.80512 20.3817 9.77195 20.2311 9.75859 19.874C9.72896 19.0817 9.31997 18.3187 8.5939 17.8995C7.86784 17.4803 7.00262 17.5076 6.30158 17.8781C5.98565 18.0451 5.83863 18.0917 5.73495 18.1053C5.40626 18.1486 5.07385 18.0595 4.81084 17.8577C4.74458 17.8069 4.66045 17.7201 4.52586 17.5198C4.38751 17.314 4.22736 17.0374 3.98926 16.625C3.75115 16.2126 3.59171 15.9356 3.4826 15.7129C3.37646 15.4962 3.34338 15.3799 3.33248 15.2971C3.28921 14.9684 3.37828 14.636 3.5801 14.373C3.64376 14.2901 3.75761 14.186 4.0602 13.9959C4.73158 13.5741 5.18782 12.8384 5.18786 12.0001C5.18791 11.1616 4.73165 10.4259 4.06021 10.004C3.75769 9.81389 3.64385 9.70987 3.58019 9.62691C3.37838 9.3639 3.28931 9.03149 3.33258 8.7028C3.34348 8.62001 3.37656 8.50375 3.4827 8.28707C3.59181 8.06431 3.75125 7.78734 3.98935 7.37493C4.22746 6.96253 4.3876 6.68596 4.52596 6.48009C4.66055 6.27983 4.74468 6.19305 4.81093 6.14222C5.07395 5.9404 5.40636 5.85133 5.73504 5.8946C5.83873 5.90825 5.98576 5.95483 6.30173 6.12184C7.00273 6.49235 7.86791 6.51962 8.59394 6.10045C9.31998 5.68128 9.72896 4.91837 9.75859 4.12602C9.77195 3.76889 9.80512 3.61827 9.84514 3.52165C9.97201 3.21536 10.2154 2.97202 10.5216 2.84515Z"
+                fill="currentColor"></path>
+        </svg>
+    </template>
+
+    <template id="icon-sun">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+    </template>
+
+    <template id="icon-moon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </template>
+
+    <template id="icon-cloud">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+        </svg>
+    </template>
+
+    <template id="icon-drizzle">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="19" x2="8" y2="21"></line>
+            <line x1="8" y1="13" x2="8" y2="15"></line>
+            <line x1="16" y1="19" x2="16" y2="21"></line>
+            <line x1="16" y1="13" x2="16" y2="15"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="12" y1="15" x2="12" y2="17"></line>
+            <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path>
+        </svg>
+    </template>
+
+    <template id="icon-rain">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="16" y1="13" x2="16" y2="21"></line>
+            <line x1="8" y1="13" x2="8" y2="21"></line>
+            <line x1="12" y1="15" x2="12" y2="23"></line>
+            <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path>
+        </svg>
+    </template>
+
+    <template id="icon-lightning">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"></path>
+            <polyline points="13 11 9 17 15 17 11 23"></polyline>
+        </svg>
+    </template>
+
+    <body id="opened">
+        <div id="overlay"></div>
+        <img id="bg" src="./images/qiyue.png" alt="Background" />
+        <main id="app">
+            <h1 id="time">
+                <span id="hour">4</span>:<span id="minute">10</span>
+            </h1>
+
+            <!-- <button id="status">
+                <div class="status" title="temperature">
+                    <div id="weather-icon">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path
+                                d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"
+                            ></path>
+                        </svg>
+                    </div>
+                    <span id="temperature">-</span>°
+                </div>
+
+                <div class="status" title="rain forecast">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="p-0.5"
+                    >
+                        <path
+                            d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7"
+                        ></path>
+                    </svg>
+                    <span id="rain">-</span>%
+                </div>
+
+                <div class="status" title="uv index">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="p-0.5"
+                    >
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line
+                            x1="18.36"
+                            y1="18.36"
+                            x2="19.78"
+                            y2="19.78"
+                        ></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <span id="uv-index">Click to activate</span>
+                </div>
+            </button> -->
+
+            <div id="engine">
+                <form id="search">
+                    <div class="input-search-element">
+                        <div class="input-search-element-inner transition" id="search-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                stroke-linejoin="round" class="icon">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </div>
+                        <div class="input-search-element-inner transition fade-out-down" id="search-icon-override">
+                        </div>
+                    </div>
+                    <input id="search-value" autocomplete="off" autocorrect="off" class="input" placeholder="Search"
+                        type="text" autofocus />
+                    <button id="search-submit" class="submit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="feather feather-send">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </form>
+
+                <section id="suggestion" style="display: none"></section>
+
+                <section id="pin">
+                    <a href="https://dict.youdao.com/">
+                        <svg viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                            <path
+                                d="M17,10.5 C17.7796706,10.5 18.4204457,11.0949121 18.4931332,11.8555442 L18.5,12 L18.5,12.5 L19.5,12.5 C20.5543909,12.5 21.4181678,13.31585 21.4945144,14.3507339 L21.5,14.5 L21.5,17.5 C21.5,18.5543909 20.68415,19.4181678 19.6492661,19.4945144 L19.5,19.5 L18.5,19.5 L18.5,20 C18.5,20.8284 17.8284,21.5 17,21.5 C16.2203294,21.5 15.5795543,20.9050879 15.5068668,20.1444558 L15.5,20 L15.5,19.5 L14.5,19.5 C13.4456091,19.5 12.5818322,18.68415 12.5054856,17.6492661 L12.5,17.5 L12.5,14.5 C12.5,13.4456091 13.31585,12.5818322 14.3507339,12.5054856 L14.5,12.5 L15.5,12.5 L15.5,12 C15.5,11.1716 16.1716,10.5 17,10.5 Z M5,14.5 C5.82843,14.5 6.5,15.1716 6.5,16 L6.5,17 C6.5,17.2761 6.72386,17.5 7,17.5 L10,17.5 C10.8284,17.5 11.5,18.1716 11.5,19 C11.5,19.8284 10.8284,20.5 10,20.5 L7,20.5 C5.067,20.5 3.5,18.933 3.5,17 L3.5,16 C3.5,15.1716 4.17157,14.5 5,14.5 Z M15.5,15 L14.5,15 L14.5,17 L15.5,17 L15.5,15 Z M19.5,15 L18.5,15 L18.5,17 L19.5,17 L19.5,15 Z M9.5,2.5 C10.3284,2.5 11,3.17157 11,4 C11,4.82843 10.3284,5.5 9.5,5.5 L5.5,5.5 L5.5,6.5 L9,6.5 C9.82843,6.5 10.5,7.17157 10.5,8 C10.5,8.82843 9.82843,9.5 9,9.5 L5.5,9.5 L5.5,10.5 L10,10.5 C10.8284,10.5 11.5,11.1716 11.5,12 C11.5,12.8284 10.8284,13.5 10,13.5 L4.1,13.5 C3.21635,13.5 2.5,12.7837 2.5,11.9 L2.5,4.1 C2.5,3.21635 3.21634,2.5 4.1,2.5 L9.5,2.5 Z M17,3.5 C18.933,3.5 20.5,5.067 20.5,7 L20.5,9 C20.5,9.82843 19.8284,10.5 19,10.5 C18.1716,10.5 17.5,9.82843 17.5,9 L17.5,7 C17.5,6.72386 17.2761,6.5 17,6.5 L14,6.5 C13.1716,6.5 12.5,5.82843 12.5,5 C12.5,4.17157 13.1716,3.5 14,3.5 L17,3.5 Z">
+                            </path>
+                        </svg>
+                    </a>
+                    <a href="http://vocakey.imikufans.com/index.html">
+                        <img src="data:image/svg+xml,%3csvg%20version='1.2'%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20413%20266'%20width='413'%20height='266'%3e%3cstyle%3e%20.s0%20{%20fill:%20none%20}%20.s1%20{%20fill:%20%2300b6c6%20}%20.s2%20{%20fill:%20%2301bacf%20}%20%3c/style%3e%3cg%20id='レイヤー_2'%3e%3cg%20id='デザイン'%3e%3cpath%20id='line1'%20fill-rule='evenodd'%20class='s0'%20d='m120.67%2050.17v0.18'/%3e%3cpath%20id='path5'%20class='s1'%20d='m97.15%2061.45c13.32%200%2013.14-10.2%2013.14-10.2v-12.48h-26.62v12.48c0%200%200%2010.2%2013.55%2010.2'/%3e%3cpath%20id='path6'%20class='s1'%20d='m137.56%2075.72c0.32-6.59-4.76-12.19-11.34-12.51q-0.81-0.04-1.61%200.03h-67.87v24.89h34.38l-74.25%2069.6v35.81l113.4-106c0%200%207.11-5.97%207.11-11.58'/%3e%3cpath%20id='path7'%20class='s1'%20d='m137.03%20160.17c0%200-28.59-27.16-30.56-28.83-5.42-5.02-13.88-4.69-18.89%200.73-2.41%202.6-3.69%206.05-3.55%209.6v83.56h25.9v-55.57l27.1%2025.43c0%200%200-34.92%200-34.92z'/%3e%3cpath%20id='path8'%20class='s2'%20d='m119.48%20137.49c4.02%205.23%2011.51%206.21%2016.74%202.2q0.29-0.23%200.57-0.47l14.03-12.65v-34.68l-29.43%2027.46c-5.11%204.6-5.93%2012.32-1.91%2017.9'/%3e%3cpath%20id='path9'%20class='s1'%20d='m140.84%2064.32v23.87h53.72v137.28h26.98v-151.07c-0.1-5.67-4.77-10.18-10.44-10.09q-0.09%200-0.19%200.01c0%200-70.07%200-70.07%200z'/%3e%3cpath%20id='path10'%20class='s1'%20d='m154.16%20103.53v121.7h26.74v-121.7c0%200%200.54-9.13-13.13-9.13-13.67%200-13.61%209.13-13.61%209.13z'/%3e%3cpath%20id='path14'%20class='s1'%20d='m308.92%2061.45c13.31%200%2013.13-10.2%2013.13-10.2v-12.48h-26.62v12.48c0%200%200%2010.2%2013.49%2010.2z'/%3e%3cpath%20id='path15'%20class='s1'%20d='m255.2%20132.96v91.98h72.94c0%200%2047.75%200%2047.75-45.9%200-45.9-47.75-46.32-47.75-46.32zm93.64%2046.2c0.89%2010.87-7.2%2020.41-18.07%2021.3q-0.75%200.06-1.5%200.07h-47.21v-9.91h42.97c6.22-0.32%2011.01-5.62%2010.69-11.84q0-0.05-0.01-0.1c0.63-5.93-3.67-11.25-9.6-11.88q-0.54-0.05-1.08-0.06h-42.97v-9.19h47.21c11.04%200.23%2019.8%209.36%2019.58%2020.4q-0.02%200.61-0.06%201.21'/%3e%3cpath%20id='path16'%20class='s1'%20d='m388.96%20112.84c0.63-5.93-3.68-11.25-9.61-11.88q-0.54-0.05-1.07-0.06h-29.37v-12.71h16.18c6.22-0.28%2011.03-5.56%2010.75-11.78q-0.01-0.08-0.01-0.16c0.59-5.97-3.77-11.29-9.74-11.88q-0.5-0.05-1-0.05h-123.25v23.87h26.97v12.9h-40.05v23.87h149.63c6.23-0.32%2011.01-5.62%2010.69-11.84q0-0.05%200-0.1m-66.73-11.93h-26.92v-12.9h26.92z'/%3e%3c/g%3e%3c/g%3e%3c/svg%3e" alt="Vocakey" style="
+                                width: 100%;
+                                height: 100%;
+                                filter: brightness(0) invert(1);
+                            " /> </a><a href="https://cstimer.net">
+                        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M12 5C7.44621 5 3.75 8.69621 3.75 13.25C3.75 17.8038 7.44621 21.5 12 21.5C16.5538 21.5 20.25 17.8038 20.25 13.25C20.25 8.69621 16.5538 5 12 5ZM2.25 13.25C2.25 7.86779 6.61779 3.5 12 3.5C17.3822 3.5 21.75 7.86779 21.75 13.25C21.75 18.6322 17.3822 23 12 23C6.61779 23 2.25 18.6322 2.25 13.25Z" />
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M8.25 1.75C8.25 2.16421 8.58579 2.5 9 2.5L15 2.5C15.4142 2.5 15.75 2.16421 15.75 1.75C15.75 1.33579 15.4142 0.999999 15 0.999999L9 1C8.58579 1 8.25 1.33579 8.25 1.75Z" />
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V13.25C12.75 13.6642 12.4142 14 12 14C11.5858 14 11.25 13.6642 11.25 13.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5Z" />
+                        </svg>
+                    </a>
+                    <a href="https://github.com">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" fill="currentColor" class="icon">
+                            <path
+                                d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3 .3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5 .3-6.2 2.3zm44.2-1.7c-2.9 .7-4.9 2.6-4.6 4.9 .3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3 .7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3 .3 2.9 2.3 3.9 1.6 1 3.6 .7 4.3-.7 .7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3 .7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3 .7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z" />
+                        </svg>
+                    </a>
+                    <a href="https://hookpad.hooktheory.com" >
+                        <svg viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                            <g>
+                                <path
+                                    d="M162.77,488.884c-8.509,0-15.41-6.901-15.41-15.41V309.941c0-8.509,6.901-15.41,15.41-15.41 s15.41,6.901,15.41,15.41v163.533C178.18,481.983,171.279,488.884,162.77,488.884z">
+                                </path>
+                                <path
+                                    d="M349.23,488.884c-8.509,0-15.41-6.901-15.41-15.41V309.941c0-8.509,6.901-15.41,15.41-15.41 c8.509,0,15.41,6.901,15.41,15.41v163.533C364.64,481.983,357.739,488.884,349.23,488.884z">
+                                </path>
+                                <path
+                                    d="M456.125,488.884H55.875C25.066,488.884,0,463.818,0,433.007V78.993 c0-30.811,25.066-55.876,55.875-55.876h400.25c8.509,0,15.41,6.901,15.41,15.41s-6.901,15.41-15.41,15.41H55.875 c-13.815,0-25.055,11.24-25.055,25.056v354.015c0,13.816,11.24,25.056,25.055,25.056h400.25c13.815,0,25.055-11.24,25.055-25.056 V143.512c0-8.509,6.901-15.41,15.41-15.41c8.509,0,15.41,6.901,15.41,15.41v289.495C512,463.818,486.934,488.884,456.125,488.884z">
+                                </path>
+                            </g>
+                            <path
+                                d="M178.951,314.564H146.59c-16.596,0-30.049-13.453-30.049-30.049V38.526H209v245.987 C209,301.109,195.547,314.564,178.951,314.564z">
+                            </path>
+                            <path
+                                d="M178.951,329.974H146.59c-25.067,0-45.459-20.392-45.459-45.459V38.526 c0-8.509,6.901-15.41,15.41-15.41H209c8.509,0,15.41,6.901,15.41,15.41v245.988C224.41,309.58,204.018,329.974,178.951,329.974z M131.95,53.936v230.578c0,8.072,6.568,14.639,14.639,14.639h32.361c8.072,0,14.639-6.568,14.639-14.639V53.936H131.95z">
+                            </path>
+                            <path
+                                d="M365.41,314.564h-32.361c-16.596,0-30.049-13.453-30.049-30.049V38.526h92.459v245.987 C395.46,301.109,382.005,314.564,365.41,314.564z">
+                            </path>
+                            <path
+                                d="M365.41,329.974h-32.361c-25.067,0-45.459-20.392-45.459-45.459V38.526 c0-8.509,6.901-15.41,15.41-15.41h92.459c8.509,0,15.41,6.901,15.41,15.41v245.988C410.87,309.58,390.478,329.974,365.41,329.974z M318.41,53.936v230.578c0,8.072,6.568,14.639,14.639,14.639h32.361c8.072,0,14.639-6.568,14.639-14.639V53.936H318.41z">
+                            </path>
+                        </svg>
+                    </a>
+                    <a href="https://www.nicovideo.jp/">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                            <path
+                                d="M.4787 7.534v12.1279A2.0213 2.0213 0 0 0 2.5 21.6832h2.3888l1.323 2.0948a.4778.4778 0 0 0 .4043.2205.4778.4778 0 0 0 .441-.2205l1.323-2.0948h6.9828l1.323 2.0948a.4778.4778 0 0 0 .441.2205c.1838 0 .3308-.0735.4043-.2205l1.323-2.0948h2.6462a2.0213 2.0213 0 0 0 2.0213-2.0213V7.5339a2.0213 2.0213 0 0 0-2.0213-1.9845h-7.681l4.4468-4.4469L17.1637 0l-5.1452 5.1452L6.8 0 5.6973 1.1025l4.4102 4.4102H2.5367a2.0213 2.0213 0 0 0-2.058 2.058z">
+                            </path>
+                        </svg>
+                    </a>
+                </section>
+            </div>
+        </main>
+
+        <div id="quote-container">
+            <div id="quote-lyrics">
+                <p id="quote-text"></p>
+                <p id="quote-translation"></p>
+            </div>
+            <p id="quote-song"></p>
+        </div>
+
+        <!-- Settings Menu -->
+        <div id="settings-menu" class="settings-menu">
+            <div class="settings-icon"></div>
+            <div class="settings-dropdown">
+                <div class="menu-label">Display Lyrics</div>
+                <div class="settings-toggle">
+                    <button class="toggle-btn active" data-action="lyrics-on">On</button>
+                    <button class="toggle-btn" data-action="lyrics-off">Off</button>
+                </div>
+                <div class="menu-label">Background Image</div>
+
+                <div class="bg-select">
+                    <div class="selected">Qiyue</div>
+                    <div class="options">
+                        <div data-bg="qiyue.png">Qiyue</div>
+                        <div data-bg="eimy.png">Eimy</div>
+                        <div data-bg="mu.jpg">Mu</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </body>
+
+</html>
