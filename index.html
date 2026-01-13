@@ -584,6 +584,37 @@
         .bg-select .options div.hidden {
             display: none;
         }
+
+        .upload-section {
+            padding: 8px 12px 12px 12px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .upload-btn {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(100, 200, 255, 0.15);
+            color: rgba(100, 200, 255, 0.9);
+            border: 2px dashed rgba(100, 200, 255, 0.4);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .upload-btn:hover {
+            background: rgba(100, 200, 255, 0.25);
+            border-color: rgba(100, 200, 255, 0.6);
+            color: rgba(100, 200, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(100, 200, 255, 0.2);
+        }
+
+        .upload-btn:active {
+            transform: scale(0.98);
+        }
     </style>
     <script type="module" src="index.js"></script>
     <script type="module" src="settings.js"></script>
@@ -869,6 +900,10 @@
                         <div data-bg="eimy.png">Eimy</div>
                         <div data-bg="mu.jpg">Mu</div>
                     </div>
+                </div>
+                <div class="upload-section">
+                    <input type="file" id="upload-bg-input" accept="image/*" style="display: none;" />
+                    <button id="upload-bg-btn" class="upload-btn">Upload Custom Image</button>
                 </div>
 
             </div>

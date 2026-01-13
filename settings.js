@@ -138,4 +138,42 @@ document.addEventListener('DOMContentLoaded', () => {
             currentActiveBgItem = item
         })
     })
+
+    // Upload Custom Image
+    const uploadInput = document.getElementById('upload-bg-input')
+    const uploadBtn = document.getElementById('upload-bg-btn')
+
+    if (uploadBtn && uploadInput) {
+        uploadBtn.addEventListener('click', () => {
+            uploadInput.click()
+        })
+
+        uploadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0]
+            if (!file) return
+
+            const reader = new FileReader()
+            reader.onload = (event) => {
+                const dataUrl = event.target.result
+                if (bgElement) {
+                    bgElement.src = dataUrl
+                    try {
+                        localStorage.setItem('bgImage', dataUrl)
+                        localStorage.setItem('bgImageCustom', 'true')
+                    } catch (e) {
+                        console.error('LocalStorage error:', e)
+                    }
+                }
+
+                // Update UI
+                bgSelectDivs.forEach((d) => d.classList.remove('active'))
+                if (currentActiveBgItem) {
+                    currentActiveBgItem.classList.remove('active')
+                }
+                currentActiveBgItem = null
+                bgSelectSelected.textContent = file.name || 'Custom Image'
+            }
+            reader.readAsDataURL(file)
+        })
+    }
 })
