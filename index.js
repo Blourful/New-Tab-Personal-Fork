@@ -1,3 +1,29 @@
+// Smooth background reveal: hide until loaded, then show
+document.addEventListener('DOMContentLoaded', () => {
+    const bgElement = document.getElementById('bg')
+    if (!bgElement) return
+
+    // Restore last background
+    const savedBgImage = (() => {
+        try {
+            return localStorage.getItem('bgImage')
+        } catch (e) {
+            return null
+        }
+    })()
+
+    if (savedBgImage && bgElement) {
+        if (savedBgImage.startsWith('data:image')) {
+            bgElement.src = savedBgImage
+        } else {
+            bgElement.src = `./images/${savedBgImage}`
+        }
+    }
+
+    bgElement.onload = () => {
+        bgElement.classList.remove('bg-hidden')
+    }
+})
 /**
  * All icons underneath are from the Font Awesome Free 6.6.0 by @fontawesome
  * - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024
