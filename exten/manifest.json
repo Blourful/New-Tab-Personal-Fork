@@ -1,0 +1,14 @@
+{
+    "manifest_version": 3,
+    "name": "Local New Tab",
+    "version": "1.0",
+    "description": "Use local HTML as new tab page",
+    "icons": {
+        "16": "./images/logo 16.png",
+        "48": "./images/logo 48.png",
+        "128": "./images/logo 128.png"
+    },
+    "chrome_url_overrides": {
+        "newtab": "index.html"
+    }
+}
