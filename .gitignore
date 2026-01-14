@@ -4,3 +4,6 @@ proxy.ts
 start-proxy.vbs
 tempCodeRunnerFile.bat
 start-proxy.bat
+dist
+extension.zip
+build-extension.ps1

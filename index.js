@@ -1,3 +1,26 @@
+// Initialize background on page load
+const ensureDefaultBg = () => {
+    let savedBgImage = localStorage.getItem('bgImage')
+    const scheduleEnabled = localStorage.getItem('scheduleEnabled') === 'true'
+    // 如果没有背景显示，加载第一个qiyue
+    if (!savedBgImage || savedBgImage === '' || savedBgImage === 'null') {
+        try {
+            localStorage.setItem('bgImage', 'qiyue.png')
+            localStorage.removeItem('bgImageCustom')
+        } catch (e) {}
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const scheduleEnabled = localStorage.getItem('scheduleEnabled') === 'true'
+    if (!scheduleEnabled) {
+        ensureDefaultBg()
+        loadBg()
+    }
+    // 如果启用 schedule，由 settings.js 的 enableSchedule/applyScheduledBackground 控制背景
+})
+
+// Weather featur
 /**
  * All icons underneath are from the Font Awesome Free 6.6.0 by @fontawesome
  * - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024
@@ -390,8 +413,12 @@ document.addEventListener(
             quoteLyrics.addEventListener('click', () => advanceQuote())
             quoteLyrics.addEventListener('contextmenu', (event) => {
                 event.preventDefault()
+                console.log('Right-click detected on lyrics')
                 retreatQuote()
             })
+            console.log('Lyrics event listeners attached successfully')
+        } else {
+            console.error('quoteLyrics element not found')
         }
 
         // Privacy: Disable weather (sends location to open-meteo.com)
@@ -653,6 +680,108 @@ document.addEventListener(
         once: true
     }
 )
+
+// ==================== Background Management ====================
+const setBgImageSmooth = (imageName, isCustom = false) => {
+    const src = isCustom ? imageName : `./images/${imageName}`
+    const bgEl = document.getElementById('bg')
+
+    if (!bgEl) return
+
+    const img = new Image()
+    img.decoding = 'async'
+
+    img.onload = () => {
+        bgEl.src = src
+    }
+
+    img.src = src
+}
+
+const saveToIndexedDB = (key, value) => {
+    return new Promise((resolve) => {
+        const request = indexedDB.open('bgDB', 1)
+        request.onupgradeneeded = () => {
+            request.result.createObjectStore('images')
+        }
+        request.onsuccess = () => {
+            const db = request.result
+            const tx = db.transaction('images', 'readwrite')
+            tx.objectStore('images').put(value, key)
+            resolve()
+        }
+        request.onerror = () => resolve()
+    })
+}
+
+const loadFromIndexedDB = (key) => {
+    return new Promise((resolve) => {
+        const request = indexedDB.open('bgDB', 1)
+        request.onsuccess = () => {
+            const db = request.result
+            const tx = db.transaction('images', 'readonly')
+            const getRequest = tx.objectStore('images').get(key)
+            getRequest.onsuccess = () => resolve(getRequest.result)
+            getRequest.onerror = () => resolve(null)
+        }
+        request.onerror = () => resolve(null)
+    })
+}
+
+window.saveCustomBg = async (dataUrl) => {
+    await saveToIndexedDB('customBg', dataUrl)
+    localStorage.setItem('bgImage', 'CUSTOM_BG_INDEXED')
+    localStorage.setItem('bgImageCustom', 'true')
+}
+
+window.setBgImageSmooth = setBgImageSmooth
+
+window.loadCustomBg = loadFromIndexedDB
+
+const loadBg = async () => {
+    const savedBgImage = localStorage.getItem('bgImage')
+    const isCustomBg = localStorage.getItem('bgImageCustom') === 'true'
+    const defaultBg = './images/qiyue.png'
+    const scheduleEnabled = localStorage.getItem('scheduleEnabled') === 'true'
+
+    let bgSrc = defaultBg
+    let isCustom = false
+
+    // Auto switch: load from cache if enabled
+    if (scheduleEnabled && savedBgImage) {
+        // If the savedBgImage is a data URL or a cached path, use it directly
+        bgSrc = savedBgImage
+        isCustom = false
+    } else if (isCustomBg && savedBgImage === 'CUSTOM_BG_INDEXED') {
+        const customBgData = await loadFromIndexedDB('customBg')
+        if (customBgData) {
+            bgSrc = customBgData
+            isCustom = true
+        }
+    } else if (savedBgImage && !isCustomBg) {
+        bgSrc = savedBgImage
+        isCustom = false
+    }
+
+    setBgImageSmooth(bgSrc, isCustom)
+}
+
+// Initialize background on page load
+loadBg()
+
+// 初始化背景：第一次加载时设置第一个预设背景
+document.addEventListener('DOMContentLoaded', () => {
+    const savedBgImage = localStorage.getItem('bgImage')
+    const scheduleEnabled = localStorage.getItem('scheduleEnabled') === 'true'
+
+    // 只在第一次加载且未启用 auto switch 时设置
+    if (!savedBgImage && !scheduleEnabled) {
+        try {
+            localStorage.setItem('bgImage', 'qiyue.png')
+            localStorage.removeItem('bgImageCustom')
+        } catch (e) {}
+    }
+})
 
 // Weather feature disabled for privacy.
 // const displayWeather = () => {}

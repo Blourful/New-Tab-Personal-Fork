@@ -3,6 +3,7 @@
     "name": "Local New Tab",
     "version": "1.0",
     "description": "Use local HTML as new tab page",
+    "permissions": ["geolocation"],
     "icons": {
         "16": "./images/logo 16.png",
         "48": "./images/logo 48.png",
