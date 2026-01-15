@@ -73,7 +73,7 @@ function renderPins() {
     pins.forEach((pin) => {
         const link = document.createElement('a')
         link.href = pin.url
-        link.title = pin.name
+        // link.title = pin.name
 
         if (pin.iconType === 'image') {
             const img = document.createElement('img')

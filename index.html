@@ -307,8 +307,12 @@
         }
 
         #pin>a>svg {
-            position: absolute;
-            padding: 8px;
+            width: 24px !important;
+            height: 24px !important;
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            filter: brightness(0) invert(1);
         }
 
         .input-search-element {
@@ -729,9 +733,13 @@
         }
 
         #pin-list .pin-item-icon svg {
-            width: 100%;
-            height: 100%;
 
+            width: 24px;
+            height: 24px;
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            filter: brightness(0) invert(1);
         }
 
         #pin-list .pin-item-name {
@@ -943,6 +951,28 @@
 
         .modal-actions #pin-delete:hover {
             background: rgba(255, 0, 0, 0.3);
+        }
+
+        .icon-upload-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        #pin-icon-upload-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px dashed rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.85);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        #pin-icon-upload-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.6);
         }
     </style>
     <script type="module" src="index.js"></script>
@@ -1216,6 +1246,10 @@
             <div>
                 <label for="pin-icon-input">Icon (SVG code )</label>
                 <textarea id="pin-icon-input" placeholder="<svg>...</svg> "></textarea>
+                <div class="icon-upload-row">
+                    <input type="file" id="pin-icon-upload" accept=".svg" hidden />
+                    <button type="button" id="pin-icon-upload-btn">Upload SVG</button>
+                </div>
                 <label for="pin-icon-input">Icon preview</label>
                 <div class="icon-preview" id="pin-icon-preview"></div>
             </div>

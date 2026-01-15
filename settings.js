@@ -377,6 +377,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const iconInput = document.getElementById('pin-icon-input')
         const iconPreview = document.getElementById('pin-icon-preview')
         const deleteBtn = document.getElementById('pin-delete')
+        const uploadInput = document.getElementById('pin-icon-upload')
+        const uploadBtn = document.getElementById('pin-icon-upload-btn')
+
+        uploadBtn.onclick = () => uploadInput.click()
+
+        uploadInput.onchange = () => {
+            const file = uploadInput.files[0]
+            if (!file) return
+
+            if (!file.name.endsWith('.svg')) {
+                alert('Only SVG files are supported')
+                uploadInput.value = ''
+                return
+            }
+
+            const reader = new FileReader()
+            reader.onload = () => {
+                let svgText = reader.result
+                // Remove BOM
+                svgText = svgText.replace(/^\uFEFF/, '')
+                // Remove XML declaration
+                svgText = svgText.replace(/<\?xml[\s\S]*?\?>/i, '')
+                // Remove DOCTYPE
+                svgText = svgText.replace(/<!DOCTYPE[\s\S]*?>/i, '')
+                // Trim whitespace
+                svgText = svgText.trim()
+                svgText = svgText.replace(/<!--[\s\S]*?-->/g, '')
+                if (!/width=/i.test(svgText))
+                    svgText = svgText.replace(
+                        /<svg/i,
+                        '<svg width="24" height="24"'
+                    )
+                if (!/viewBox=/i.test(svgText))
+                    svgText = svgText.replace(
+                        /<svg/i,
+                        '<svg viewBox="0 0 24 24"'
+                    )
+                iconInput.value = svgText
+                updatePreview()
+            }
+            reader.readAsText(file)
+
+            uploadInput.value = ''
+        }
 
         if (!modal || !title || !nameInput || !urlInput || !iconInput) return
 
