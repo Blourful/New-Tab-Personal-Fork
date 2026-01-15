@@ -381,7 +381,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const uploadBtn = document.getElementById('pin-icon-upload-btn')
 
         uploadBtn.onclick = () => uploadInput.click()
-
+        const updatePreview = () => {
+            const iconValue = iconInput.value.trim()
+            iconPreview.innerHTML = ''
+            if (iconValue) {
+                if (
+                    iconValue.startsWith('<svg') ||
+                    iconValue.startsWith('<img')
+                ) {
+                    iconPreview.innerHTML = iconValue
+                } else if (
+                    iconValue.startsWith('http') ||
+                    iconValue.startsWith('data:') ||
+                    iconValue.startsWith('./')
+                ) {
+                    const img = document.createElement('img')
+                    img.src = iconValue.startsWith('./')
+                        ? chrome.runtime.getURL(iconValue.substring(2))
+                        : iconValue
+                    img.alt = 'Icon preview'
+                    iconPreview.appendChild(img)
+                }
+            }
+        }
         uploadInput.onchange = () => {
             const file = uploadInput.files[0]
             if (!file) return
@@ -442,29 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteBtn.style.display = 'none'
         }
 
-        const updatePreview = () => {
-            const iconValue = iconInput.value.trim()
-            iconPreview.innerHTML = ''
-            if (iconValue) {
-                if (
-                    iconValue.startsWith('<svg') ||
-                    iconValue.startsWith('<img')
-                ) {
-                    iconPreview.innerHTML = iconValue
-                } else if (
-                    iconValue.startsWith('http') ||
-                    iconValue.startsWith('data:') ||
-                    iconValue.startsWith('./')
-                ) {
-                    const img = document.createElement('img')
-                    img.src = iconValue.startsWith('./')
-                        ? chrome.runtime.getURL(iconValue.substring(2))
-                        : iconValue
-                    img.alt = 'Icon preview'
-                    iconPreview.appendChild(img)
-                }
-            }
-        }
+        
 
         iconInput.addEventListener('input', updatePreview)
         updatePreview()
