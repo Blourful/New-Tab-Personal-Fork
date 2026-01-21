@@ -283,24 +283,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div')
             item.className = 'pin-item'
             item.dataset.pinId = pin.id
+            item.removeAttribute('title')
 
             const iconDiv = document.createElement('div')
             iconDiv.className = 'pin-item-icon'
+            iconDiv.removeAttribute('title')
             if (pin.iconType === 'image') {
                 const img = document.createElement('img')
                 img.src = pin.icon
-                img.alt = pin.name
+                img.alt = ''
+                img.removeAttribute('title')
                 iconDiv.appendChild(img)
             } else {
-                iconDiv.innerHTML = pin.icon || ''
+                
+                let svgHtml = pin.icon || ''
+                if (svgHtml) {
+                    svgHtml = svgHtml.replace(/<title>[\s\S]*?<\/title>/gi, '')
+                }
+                iconDiv.innerHTML = svgHtml
             }
 
             const nameDiv = document.createElement('div')
             nameDiv.className = 'pin-item-name'
             nameDiv.textContent = pin.name
+            nameDiv.removeAttribute('title')
 
             const actionsDiv = document.createElement('div')
             actionsDiv.className = 'pin-item-actions'
+            actionsDiv.removeAttribute('title')
 
             const editBtn = document.createElement('button')
             editBtn.className = 'pin-edit-btn'
@@ -463,8 +473,6 @@ document.addEventListener('DOMContentLoaded', () => {
             iconInput.value = ''
             deleteBtn.style.display = 'none'
         }
-
-        
 
         iconInput.addEventListener('input', updatePreview)
         updatePreview()
